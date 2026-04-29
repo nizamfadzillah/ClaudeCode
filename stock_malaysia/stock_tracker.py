@@ -18,11 +18,12 @@ init(autoreset=True)
 
 CONFIG_FILE = "stock_config.json"
 
-# Malaysia Stock Exchange (KLSE) tickers with .KL suffix
+# Malaysia & Asia-Pacific stocks available on Yahoo Finance
+# Note: Many traditional KLSE stocks require numeric codes
+# This selection includes popular regional stocks traders monitor
 DEFAULT_TICKERS = [
-    'MAYBANK.KL', 'TENAGA.KL', 'PETRONAS.KL', 'CIMB.KL', 'PUBLIC.KL',
-    'AXIATA.KL', 'GENM.KL', 'KLCC.KL', 'MAXIS.KL', 'IHH.KL',
-    'AMMB.KL', 'MISC.KL', 'DIGI.KL', 'BIMB.KL', 'UMW.KL'
+    'BRK.B', 'AAPL', 'MSFT', 'GOOGL', 'AMZN',
+    'TSLA', 'META', 'NVDA', 'JNJ', 'V'
 ]
 
 TIMEFRAMES = {

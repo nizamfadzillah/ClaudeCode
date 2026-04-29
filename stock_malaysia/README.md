@@ -4,12 +4,12 @@ A powerful Python script that pulls real-time Malaysia stock data from Kuala Lum
 
 ## Features
 
-✅ **Malaysia Stock Focus** - Tracks stocks on Kuala Lumpur Stock Exchange (KLSE)  
+✅ **Multi-Market Support** - Monitor stocks across different exchanges  
 ✅ **Color-Coded Output** - Green for gains, red for losses  
 ✅ **Multiple Timeframes** - 1h, 1d, 1w, 1m, 3m, 1y gains  
 ✅ **Export to CSV/Excel** - Save results for analysis  
 ✅ **Smart Filtering** - Filter by gain %, price range  
-✅ **Config File Support** - Save custom Malaysia stock lists  
+✅ **Config File Support** - Save custom stock lists  
 ✅ **All Timeframes View** - See gains across all periods  
 
 ## Installation
