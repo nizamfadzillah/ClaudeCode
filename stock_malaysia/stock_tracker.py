@@ -18,12 +18,10 @@ init(autoreset=True)
 
 CONFIG_FILE = "stock_config.json"
 
-# Malaysia & Asia-Pacific stocks available on Yahoo Finance
-# Note: Many traditional KLSE stocks require numeric codes
-# This selection includes popular regional stocks traders monitor
+# Malaysia Stock Exchange (KLSE) stocks using numeric codes
 DEFAULT_TICKERS = [
-    'BRK.B', 'AAPL', 'MSFT', 'GOOGL', 'AMZN',
-    'TSLA', 'META', 'NVDA', 'JNJ', 'V'
+    '1155.KL', '4863.KL', '5113.KL', '1023.KL', '1295.KL',
+    '6012.KL', '3182.KL', '1818.KL', '6887.KL', '5185.KL'
 ]
 
 TIMEFRAMES = {
