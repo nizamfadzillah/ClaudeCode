@@ -18,13 +18,32 @@ import json
 
 
 class StockAnalysisGUI:
-    def __init__(self, root):
+    
+    # Market configurations
+    MARKETS = {
+        'US': {
+            'name': 'US Market',
+            'tickers': ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 
+                       'NFLX', 'BRK.B', 'JNJ', 'V', 'WMT', 'JPM', 'DIS', 'PYPL'],
+            'default': 'AAPL',
+        },
+        'MALAYSIA': {
+            'name': 'Malaysia (KLSE)',
+            'tickers': ['MAYBANK.KL', 'TENAGA.KL', 'PETRONAS.KL', 'CIMB.KL', 'PUBLIC.KL',
+                       'AXIATA.KL', 'GENM.KL', 'KLCC.KL', 'MAXIS.KL', 'IHH.KL',
+                       'AMMB.KL', 'MISC.KL', 'DIGI.KL', 'BIMB.KL', 'UMW.KL'],
+            'default': 'MAYBANK.KL',
+        },
+    }
+    
+    def __init__(self, root, market='US'):
         self.root = root
-        self.root.title("Extreme Stock Analysis Dashboard")
+        self.root.title("Extreme Stock Analysis Dashboard (US & Malaysia)")
         self.root.geometry("1400x900")
         self.root.grid_rowconfigure(0, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
         
+        self.market = market
         self.current_analyzer = None
         self.analysis_data = None
         
@@ -35,17 +54,36 @@ class StockAnalysisGUI:
         # Main container
         main_frame = ttk.Frame(self.root)
         main_frame.grid(row=0, column=0, sticky='nsew', padx=5, pady=5)
-        main_frame.grid_rowconfigure(1, weight=1)
+        main_frame.grid_rowconfigure(2, weight=1)
         main_frame.grid_columnconfigure(0, weight=1)
+        
+        # Market Selection Frame
+        market_frame = ttk.LabelFrame(main_frame, text="Market Selection", padding=10)
+        market_frame.grid(row=0, column=0, sticky='ew', pady=(0, 5))
+        market_frame.grid_columnconfigure(2, weight=1)
+        
+        ttk.Label(market_frame, text="Market:").grid(row=0, column=0, padx=5)
+        self.market_var = tk.StringVar(value=self.market)
+        market_combo = ttk.Combobox(market_frame, textvariable=self.market_var,
+                                   values=['US', 'MALAYSIA'],
+                                   width=12, state="readonly")
+        market_combo.grid(row=0, column=1, padx=5)
+        market_combo.bind('<<ComboboxSelected>>', self._on_market_changed)
+        
+        # Quick ticker buttons
+        ttk.Label(market_frame, text="Quick Tickers:").grid(row=0, column=2, padx=(20, 5))
+        self.quick_buttons_frame = ttk.Frame(market_frame)
+        self.quick_buttons_frame.grid(row=0, column=3, columnspan=3, sticky='ew', padx=5)
+        self._update_quick_buttons()
         
         # Control Panel
         control_frame = ttk.LabelFrame(main_frame, text="Analysis Controls", padding=10)
-        control_frame.grid(row=0, column=0, sticky='ew', pady=(0, 10))
+        control_frame.grid(row=1, column=0, sticky='ew', pady=(0, 10))
         control_frame.grid_columnconfigure(1, weight=1)
         
         # Ticker input
         ttk.Label(control_frame, text="Stock Ticker:").grid(row=0, column=0, padx=5)
-        self.ticker_var = tk.StringVar(value="AAPL")
+        self.ticker_var = tk.StringVar(value=self.MARKETS[self.market]['default'])
         self.ticker_entry = ttk.Entry(control_frame, textvariable=self.ticker_var, width=20)
         self.ticker_entry.grid(row=0, column=1, padx=5, sticky='w')
         
@@ -67,7 +105,7 @@ class StockAnalysisGUI:
         
         # Notebook for tabs
         notebook = ttk.Notebook(main_frame)
-        notebook.grid(row=1, column=0, sticky='nsew')
+        notebook.grid(row=2, column=0, sticky='nsew')
         
         # Summary Tab
         self.summary_frame = ttk.Frame(notebook)
@@ -98,6 +136,31 @@ class StockAnalysisGUI:
         self.multi_frame = ttk.Frame(notebook)
         notebook.add(self.multi_frame, text="Multi-Stock")
         self._create_multi_stock_tab()
+    
+    def _update_quick_buttons(self):
+        """Update quick ticker buttons based on selected market"""
+        # Clear existing buttons
+        for widget in self.quick_buttons_frame.winfo_children():
+            widget.destroy()
+        
+        market_tickers = self.MARKETS[self.market_var.get()]['tickers'][:5]
+        for ticker in market_tickers:
+            btn = ttk.Button(self.quick_buttons_frame, text=ticker, width=8,
+                           command=lambda t=ticker: self.ticker_var.set(t))
+            btn.pack(side=tk.LEFT, padx=2)
+    
+    def _on_market_changed(self, event=None):
+        """Handle market selection change"""
+        self.market = self.market_var.get()
+        self.ticker_var.set(self.MARKETS[self.market]['default'])
+        self._update_quick_buttons()
+    
+    def _on_multi_market_changed(self, event=None):
+        """Handle multi-stock market selection change"""
+        if self.multi_market_var.get() == 'US':
+            self.multi_ticker_var.set("AAPL,MSFT,GOOGL,AMZN,NVDA")
+        else:
+            self.multi_ticker_var.set("MAYBANK.KL,TENAGA.KL,PETRONAS.KL,CIMB.KL,PUBLIC.KL")
     
     def _create_summary_tab(self):
         """Create summary tab"""
@@ -192,8 +255,33 @@ class StockAnalysisGUI:
         control_frame = ttk.LabelFrame(self.multi_frame, text="Analyze Multiple Stocks", padding=10)
         control_frame.pack(fill=tk.X, padx=5, pady=5)
         
+        # Market selector
+        ttk.Label(control_frame, text="Market:").pack(side=tk.LEFT, padx=5)
+        self.multi_market_var = tk.StringVar(value=self.market)
+        multi_market_combo = ttk.Combobox(control_frame, textvariable=self.multi_market_var,
+                                         values=['US', 'MALAYSIA'],
+                                         width=12, state="readonly")
+        multi_market_combo.pack(side=tk.LEFT, padx=5)
+        multi_market_combo.bind('<<ComboboxSelected>>', self._on_multi_market_changed)
+        
+        # Preset buttons
+        ttk.Label(control_frame, text="Presets:").pack(side=tk.LEFT, padx=(20, 5))
+        
+        def set_preset_us():
+            self.multi_ticker_var.set("AAPL,MSFT,GOOGL,AMZN,NVDA")
+        
+        def set_preset_malaysia():
+            self.multi_ticker_var.set("MAYBANK.KL,TENAGA.KL,PETRONAS.KL,CIMB.KL,PUBLIC.KL")
+        
+        self.preset_us_btn = ttk.Button(control_frame, text="US Top 5", command=set_preset_us)
+        self.preset_us_btn.pack(side=tk.LEFT, padx=2)
+        
+        self.preset_my_btn = ttk.Button(control_frame, text="Malaysia Top 5", command=set_preset_malaysia)
+        self.preset_my_btn.pack(side=tk.LEFT, padx=2)
+        
+        # Ticker input
         ttk.Label(control_frame, text="Tickers (comma-separated):").pack(side=tk.LEFT, padx=5)
-        self.multi_ticker_var = tk.StringVar(value="AAPL,MSFT,GOOGL,TSLA")
+        self.multi_ticker_var = tk.StringVar(value="AAPL,MSFT,GOOGL,AMZN,NVDA")
         multi_entry = ttk.Entry(control_frame, textvariable=self.multi_ticker_var, width=40)
         multi_entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
         

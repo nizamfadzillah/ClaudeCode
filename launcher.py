@@ -123,20 +123,24 @@ def print_report(ticker, report):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extreme Stock Analysis Suite",
+        description="Extreme Stock Analysis Suite (US & Malaysia Markets)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   python launcher.py AAPL               # Analyze AAPL in CLI
-  python launcher.py AAPL MSFT GOOGL   # Analyze multiple stocks in CLI
-  python launcher.py --gui              # Launch GUI dashboard
-  python launcher.py --gui TSLA         # Launch GUI and load TSLA
+  python launcher.py AAPL MSFT GOOGL   # Analyze multiple US stocks in CLI
+  python launcher.py --gui              # Launch GUI dashboard (US market)
+  python launcher.py --gui -m MALAYSIA  # Launch GUI dashboard (Malaysia market)
+  python launcher.py --gui MAYBANK.KL   # Launch GUI with Malaysian stock
   python launcher.py -p 3mo AAPL        # 3-month analysis
+  python launcher.py MAYBANK.KL TENAGA.KL -m MALAYSIA  # Malaysia CLI analysis
         """
     )
     
     parser.add_argument('tickers', nargs='*', help='Stock ticker symbols')
     parser.add_argument('-g', '--gui', action='store_true', help='Launch GUI dashboard')
+    parser.add_argument('-m', '--market', choices=['US', 'MALAYSIA'], default='US', 
+                       help='Market selection (default: US)')
     parser.add_argument('-p', '--period', default='1y', help='Analysis period (default: 1y)')
     parser.add_argument('-j', '--json', action='store_true', help='Output as JSON')
     
@@ -149,8 +153,9 @@ Examples:
             import tkinter as tk
             
             root = tk.Tk()
+            market = args.market.upper() if args.market else 'US'
             # Load ticker if provided
-            app = StockAnalysisGUI(root)
+            app = StockAnalysisGUI(root, market=market)
             if args.tickers:
                 app.ticker_var.set(args.tickers[0].upper())
                 app.period_var.set(args.period)
