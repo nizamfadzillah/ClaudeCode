@@ -1,59 +1,80 @@
-# PowerShell Rotating Donut Display Script
 
-function Show-RotatingDonut {
-    # Define donut frames at different rotation angles
+# PowerShell Rotating Star Display Script
+
+function Show-RotatingStar {
+
+    # Define star frames at different rotation angles
     $frames = @(
         @"
-        @@@@@@@@@@
-      @@@@@@@@@@@@@@
-     @@@@@@@    @@@@@@@
-    @@@@@@@      @@@@@@@
-   @@@@@@@        @@@@@@@
-   @@@@@@          @@@@@@
-   @@@@@@          @@@@@@
-   @@@@@@@        @@@@@@@
-    @@@@@@@      @@@@@@@
-     @@@@@@@    @@@@@@@
-      @@@@@@@@@@@@@@
-        @@@@@@@@@@
+
+
+
+
+
+
+
+
+
+
+
+
+      * * * * *
+     *       *
+   *           *
+  *             *
+ *               *
 "@,
         @"
-      @@@@@@@@@@@@@@
-    @@@@@@@@@@@@@@@@@@@
-   @@@@@@@@@    @@@@@@@@@
-  @@@@@@@@@      @@@@@@@@@
-  @@@@@@@@@        @@@@@@@@@
-  @@@@@@@@@        @@@@@@@@@
-  @@@@@@@@@      @@@@@@@@@
-   @@@@@@@@@    @@@@@@@@@
-    @@@@@@@@@@@@@@@@@@@
-      @@@@@@@@@@@@@@
+
+
+
+
+
+
+
+
+
+
+   * * * * * *
+  *           *
+ * * * * * * * *
+*                   *
+ *           *
 "@,
         @"
-        @@@@@@@@@@
-      @@@@@@@@@@@@@@
-     @@@@@@@    @@@@@@@
-    @@@@@@@      @@@@@@@
-   @@@@@@@        @@@@@@@
-   @@@@@@          @@@@@@
-   @@@@@@          @@@@@@
-   @@@@@@@        @@@@@@@
-    @@@@@@@      @@@@@@@
-     @@@@@@@    @@@@@@@
-      @@@@@@@@@@@@@@
-        @@@@@@@@@@
+
+
+
+
+
+
+
+
+
+
+
+
+     *       *
+   *           *
+  *             *
+ *               *
 "@,
         @"
-    @@@@@@@@@@@@@@@@@@@
-  @@@@@@@@@@@@@@@@@@@@@@@
- @@@@@@@@@@@    @@@@@@@@@@@
- @@@@@@@@@@@      @@@@@@@@@@@
- @@@@@@@@@@@        @@@@@@@@@@@
- @@@@@@@@@@@        @@@@@@@@@@@
- @@@@@@@@@@@      @@@@@@@@@@@
- @@@@@@@@@@@    @@@@@@@@@@@
-  @@@@@@@@@@@@@@@@@@@@@@@
-    @@@@@@@@@@@@@@@@@@@
+
+
+
+
+
+
+
+
+
+
+      * * * * *
+    *           *
+   *             *
+  *               *
+ *                 *
 "@
     )
     
@@ -63,7 +84,8 @@ function Show-RotatingDonut {
     $endTime = [DateTime]::Now.AddSeconds($duration)
     $frameIndex = 0
     
-    Write-Host "`n🍩 Rotating Donut Animation (Press Ctrl+C to stop)`n" -ForegroundColor Magenta
+
+    Write-Host "`n⭐ Rotating Star Animation (Press Ctrl+C to stop)⭐`n" -ForegroundColor Magenta
     
     while ([DateTime]::Now -lt $endTime) {
         [Console]::Clear()
@@ -73,8 +95,9 @@ function Show-RotatingDonut {
     }
     
     [Console]::Clear()
-    Write-Host "`nYum! That was a tasty rotating donut! 🍩`n" -ForegroundColor Magenta
+
+    Write-Host "`n✨ Awesome! That was a rotating star display! ⭐`n" -ForegroundColor Magenta
 }
 
-# Display the rotating donut
-Show-RotatingDonut
+# Display the rotating star
+Show-RotatingStar
