@@ -131,9 +131,9 @@ Examples:
   python launcher.py AAPL MSFT GOOGL   # Analyze multiple US stocks in CLI
   python launcher.py --gui              # Launch GUI dashboard (US market)
   python launcher.py --gui -m MALAYSIA  # Launch GUI dashboard (Malaysia market)
-  python launcher.py --gui MAYBANK.KL   # Launch GUI with Malaysian stock
+  python launcher.py --gui 1155.KL      # Launch GUI with Malaysian stock
   python launcher.py -p 3mo AAPL        # 3-month analysis
-  python launcher.py MAYBANK.KL TENAGA.KL -m MALAYSIA  # Malaysia CLI analysis
+  python launcher.py 1155.KL 4715.KL -m MALAYSIA  # Malaysia CLI analysis
         """
     )
     

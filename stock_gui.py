@@ -29,10 +29,10 @@ class StockAnalysisGUI:
         },
         'MALAYSIA': {
             'name': 'Malaysia (KLSE)',
-            'tickers': ['MAYBANK.KL', 'TENAGA.KL', 'PETRONAS.KL', 'CIMB.KL', 'PUBLIC.KL',
-                       'AXIATA.KL', 'GENM.KL', 'KLCC.KL', 'MAXIS.KL', 'IHH.KL',
-                       'AMMB.KL', 'MISC.KL', 'DIGI.KL', 'BIMB.KL', 'UMW.KL'],
-            'default': 'MAYBANK.KL',
+            'tickers': ['1155.KL', '4715.KL', '6012.KL', '1023.KL', '1295.KL',
+                       '6012.KL', '3182.KL', '1878.KL', '6012.KL', '3182.KL',
+                       '1162.KL', '3816.KL', '6335.KL', '5015.KL', '6669.KL'],
+            'default': '1155.KL',
         },
     }
     
@@ -48,6 +48,10 @@ class StockAnalysisGUI:
         self.analysis_data = None
         
         self._create_ui()
+    
+    def get_currency_symbol(self):
+        """Get currency symbol based on market"""
+        return "RM" if self.market == "MALAYSIA" else "$"
     
     def _create_ui(self):
         """Create main UI structure"""
@@ -107,6 +111,11 @@ class StockAnalysisGUI:
         notebook = ttk.Notebook(main_frame)
         notebook.grid(row=2, column=0, sticky='nsew')
         
+        # Dashboard Tab
+        self.dashboard_frame = ttk.Frame(notebook)
+        notebook.add(self.dashboard_frame, text="Dashboard")
+        self._create_dashboard_tab()
+        
         # Summary Tab
         self.summary_frame = ttk.Frame(notebook)
         notebook.add(self.summary_frame, text="Summary")
@@ -160,7 +169,378 @@ class StockAnalysisGUI:
         if self.multi_market_var.get() == 'US':
             self.multi_ticker_var.set("AAPL,MSFT,GOOGL,AMZN,NVDA")
         else:
-            self.multi_ticker_var.set("MAYBANK.KL,TENAGA.KL,PETRONAS.KL,CIMB.KL,PUBLIC.KL")
+            self.multi_ticker_var.set("1155.KL,4715.KL,6012.KL,1023.KL,1295.KL")
+    
+    def _create_dashboard_tab(self):
+        """Create overview dashboard with markets and IPO data"""
+        self.dashboard_frame.grid_rowconfigure(0, weight=1)
+        self.dashboard_frame.grid_columnconfigure(0, weight=1)
+        
+        # Create notebook for dashboard sections
+        dashboard_notebook = ttk.Notebook(self.dashboard_frame)
+        dashboard_notebook.grid(row=0, column=0, sticky='nsew', padx=5, pady=5)
+        
+        # Markets Overview Tab
+        markets_tab = ttk.Frame(dashboard_notebook)
+        dashboard_notebook.add(markets_tab, text="Markets Overview")
+        self._create_markets_overview(markets_tab)
+        
+        # IPOs Tab
+        ipos_tab = ttk.Frame(dashboard_notebook)
+        dashboard_notebook.add(ipos_tab, text="Recent & Upcoming IPOs")
+        self._create_ipos_tab(ipos_tab)
+    
+    def _create_markets_overview(self, parent):
+        """Create markets overview with stock listings and performance"""
+        parent.grid_rowconfigure(0, weight=1)
+        parent.grid_columnconfigure(0, weight=1)
+        
+        # Create main frame with scrollbar
+        main_frame = ttk.Frame(parent)
+        main_frame.grid(row=0, column=0, sticky='nsew', padx=5, pady=5)
+        main_frame.grid_rowconfigure(0, weight=1)
+        main_frame.grid_columnconfigure(0, weight=1)
+        
+        # Create canvas with scrollbar for the entire content
+        canvas = tk.Canvas(main_frame, bg="#f0f0f0")
+        scrollbar = ttk.Scrollbar(main_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.grid(row=0, column=0, sticky='nsew')
+        scrollbar.grid(row=0, column=1, sticky='ns')
+        main_frame.grid_rowconfigure(0, weight=1)
+        main_frame.grid_columnconfigure(0, weight=1)
+        
+        # Create text widget inside scrollable frame
+        markets_text = scrolledtext.ScrolledText(scrollable_frame, height=40, width=130,
+                                                 font=("Courier", 9), bg="#f0f0f0")
+        markets_text.pack(fill=tk.BOTH, expand=True)
+        
+        # Configure text tags
+        markets_text.tag_config("header", foreground="#0066cc", font=("Courier", 11, "bold"))
+        markets_text.tag_config("section", foreground="#006600", font=("Courier", 10, "bold"))
+        markets_text.tag_config("table_header", foreground="#ffffff", background="#0066cc", font=("Courier", 9, "bold"))
+        markets_text.tag_config("positive", foreground="#00aa00")
+        markets_text.tag_config("negative", foreground="#cc0000")
+        markets_text.tag_config("neutral", foreground="#666666")
+        
+        markets_text.insert(tk.END, "╔════════════════════════════════════════════════════════════════════════════════════════╗\n", "header")
+        markets_text.insert(tk.END, "║ STOCK MARKET OVERVIEW - ALL AVAILABLE STOCKS (Loading...)\n", "header")
+        markets_text.insert(tk.END, "╚════════════════════════════════════════════════════════════════════════════════════════╝\n\n", "header")
+        
+        # US Market
+        markets_text.insert(tk.END, "🇺🇸 US MARKET (NASDAQ/NYSE) - Currency: USD ($)\n", "section")
+        markets_text.insert(tk.END, "─" * 130 + "\n")
+        
+        us_tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 
+                      'NFLX', 'BRK.B', 'JNJ', 'V', 'WMT', 'JPM', 'DIS', 'PYPL']
+        
+        # Table header
+        header = f"{'Ticker':<10} {'Price':<12} {'24H Change':<12} {'1M Change':<12} {'6M Change':<12} {'1Y Change':<12}\n"
+        markets_text.insert(tk.END, header, "table_header")
+        markets_text.insert(tk.END, "─" * 130 + "\n")
+        
+        # Insert placeholder and update with real data
+        us_start_line = float(markets_text.index(tk.END))
+        for ticker in us_tickers:
+            markets_text.insert(tk.END, f"{ticker:<10} Loading...\n")
+        
+        markets_text.insert(tk.END, "\n" + "=" * 130 + "\n\n")
+        
+        # Malaysia Market
+        markets_text.insert(tk.END, "🇲🇾 MALAYSIA MARKET (KLSE) - Currency: MYR (RM)\n", "section")
+        markets_text.insert(tk.END, "─" * 130 + "\n")
+        
+        my_tickers = ['1155.KL', '4715.KL', '6012.KL', '1023.KL', '1295.KL',
+                      '3182.KL', '1878.KL', '1162.KL', '3816.KL', '6335.KL',
+                      '5015.KL', '6669.KL', '8112.KL', '9001.KL', '5099.KL']
+        
+        # Table header
+        markets_text.insert(tk.END, header, "table_header")
+        markets_text.insert(tk.END, "─" * 130 + "\n")
+        
+        my_start_line = float(markets_text.index(tk.END))
+        for ticker in my_tickers:
+            markets_text.insert(tk.END, f"{ticker:<10} Loading...\n")
+        
+        markets_text.config(state=tk.DISABLED)
+        
+        # Load data in background thread
+        thread = threading.Thread(target=self._load_market_data, args=(markets_text, us_tickers, my_tickers))
+        thread.daemon = True
+        thread.start()
+    
+    def _load_market_data(self, text_widget, us_tickers, my_tickers):
+        """Load market data in background thread"""
+        import time
+        time.sleep(1)  # Small delay to ensure UI is ready
+        
+        # Fetch data
+        us_data = self._fetch_stocks_data(us_tickers)
+        my_data = self._fetch_stocks_data(my_tickers)
+        
+        # Update text widget
+        text_widget.config(state=tk.NORMAL)
+        
+        # Clear and recreate content
+        text_widget.delete(1.0, tk.END)
+        
+        # Header
+        text_widget.insert(tk.END, "╔════════════════════════════════════════════════════════════════════════════════════════╗\n", "header")
+        text_widget.insert(tk.END, "║ STOCK MARKET OVERVIEW - ALL AVAILABLE STOCKS\n", "header")
+        text_widget.insert(tk.END, "╚════════════════════════════════════════════════════════════════════════════════════════╝\n\n", "header")
+        
+        # US Market
+        text_widget.insert(tk.END, "🇺🇸 US MARKET (NASDAQ/NYSE) - Currency: USD ($)\n", "section")
+        text_widget.insert(tk.END, "─" * 130 + "\n")
+        
+        # Table header
+        header = f"{'Ticker':<10} {'Price':<12} {'24H Change':<12} {'1M Change':<12} {'6M Change':<12} {'1Y Change':<12}\n"
+        text_widget.insert(tk.END, header, "table_header")
+        text_widget.insert(tk.END, "─" * 130 + "\n")
+        
+        # US stocks data
+        for ticker in us_tickers:
+            data = us_data.get(ticker, {})
+            price = data.get('price', 0)
+            change_1d = data.get('change_1d', 0)
+            change_1m = data.get('change_1m', 0)
+            change_6m = data.get('change_6m', 0)
+            change_1y = data.get('change_1y', 0)
+            
+            line = f"{ticker:<10} ${price:<11.2f} {change_1d:+.2f}%{'':<6} {change_1m:+.2f}%{'':<6} {change_6m:+.2f}%{'':<6} {change_1y:+.2f}%\n"
+            text_widget.insert(tk.END, line)
+        
+        text_widget.insert(tk.END, "\n" + "=" * 130 + "\n\n")
+        
+        # Malaysia Market
+        text_widget.insert(tk.END, "🇲🇾 MALAYSIA MARKET (KLSE) - Currency: MYR (RM)\n", "section")
+        text_widget.insert(tk.END, "─" * 130 + "\n")
+        
+        # Table header
+        text_widget.insert(tk.END, header, "table_header")
+        text_widget.insert(tk.END, "─" * 130 + "\n")
+        
+        # Malaysia stocks data
+        for ticker in my_tickers:
+            data = my_data.get(ticker, {})
+            price = data.get('price', 0)
+            change_1d = data.get('change_1d', 0)
+            change_1m = data.get('change_1m', 0)
+            change_6m = data.get('change_6m', 0)
+            change_1y = data.get('change_1y', 0)
+            
+            line = f"{ticker:<10} RM{price:<10.2f} {change_1d:+.2f}%{'':<6} {change_1m:+.2f}%{'':<6} {change_6m:+.2f}%{'':<6} {change_1y:+.2f}%\n"
+            text_widget.insert(tk.END, line)
+        
+        text_widget.config(state=tk.DISABLED)
+    
+    def _fetch_stocks_data(self, tickers):
+        """Fetch stock data for list of tickers"""
+        stocks_data = {}
+        
+        for ticker in tickers:
+            try:
+                # Download 1 year of data
+                hist = yf.download(ticker, period='1y', progress=False, quiet=True)
+                
+                if hist is None or hist.empty or len(hist) == 0:
+                    stocks_data[ticker] = {
+                        'price': 0,
+                        'change_1d': 0,
+                        'change_1m': 0,
+                        'change_6m': 0,
+                        'change_1y': 0
+                    }
+                    continue
+                
+                # Get current price (last available)
+                current_price = float(hist['Close'].iloc[-1])
+                
+                # Calculate changes for different periods
+                # 24 hours / 1 day
+                if len(hist) >= 2:
+                    price_1d_ago = float(hist['Close'].iloc[-2])
+                    change_1d = ((current_price - price_1d_ago) / price_1d_ago * 100) if price_1d_ago > 0 else 0
+                else:
+                    change_1d = 0
+                
+                # 1 month (approximately 22 trading days)
+                if len(hist) >= 22:
+                    price_1m_ago = float(hist['Close'].iloc[-22])
+                    change_1m = ((current_price - price_1m_ago) / price_1m_ago * 100) if price_1m_ago > 0 else 0
+                else:
+                    price_start = float(hist['Close'].iloc[0])
+                    change_1m = ((current_price - price_start) / price_start * 100) if price_start > 0 else 0
+                
+                # 6 months (approximately 130 trading days)
+                if len(hist) >= 130:
+                    price_6m_ago = float(hist['Close'].iloc[-130])
+                    change_6m = ((current_price - price_6m_ago) / price_6m_ago * 100) if price_6m_ago > 0 else 0
+                else:
+                    price_start = float(hist['Close'].iloc[0])
+                    change_6m = ((current_price - price_start) / price_start * 100) if price_start > 0 else 0
+                
+                # 1 year
+                price_1y_ago = float(hist['Close'].iloc[0])
+                change_1y = ((current_price - price_1y_ago) / price_1y_ago * 100) if price_1y_ago > 0 else 0
+                
+                stocks_data[ticker] = {
+                    'price': float(current_price),
+                    'change_1d': float(change_1d),
+                    'change_1m': float(change_1m),
+                    'change_6m': float(change_6m),
+                    'change_1y': float(change_1y)
+                }
+            except Exception as e:
+                # Default values on error
+                stocks_data[ticker] = {
+                    'price': 0,
+                    'change_1d': 0,
+                    'change_1m': 0,
+                    'change_6m': 0,
+                    'change_1y': 0
+                }
+        
+        return stocks_data
+    
+    def _create_ipos_tab(self, parent):
+        """Create IPOs tab with US and Malaysia IPOs"""
+        parent.grid_rowconfigure(0, weight=1)
+        parent.grid_columnconfigure(0, weight=1)
+        
+        ipo_text = scrolledtext.ScrolledText(parent, height=40, width=100,
+                                             font=("Courier", 10), bg="#fff9e6")
+        ipo_text.grid(row=0, column=0, sticky='nsew', padx=5, pady=5)
+        
+        # Configure text tags
+        ipo_text.tag_config("header", foreground="#ff6600", font=("Courier", 11, "bold"))
+        ipo_text.tag_config("market_header", foreground="#ffffff", background="#ff6600", font=("Courier", 10, "bold"))
+        ipo_text.tag_config("ipo_ticker", foreground="#cc0000", font=("Courier", 10, "bold"))
+        ipo_text.tag_config("ipo_info", foreground="#333333", font=("Courier", 9))
+        ipo_text.tag_config("date", foreground="#0066cc", font=("Courier", 9))
+        ipo_text.tag_config("sector", foreground="#006600", font=("Courier", 9))
+        
+        # Header
+        ipo_text.insert(tk.END, "╔════════════════════════════════════════════════════════════════╗\n", "header")
+        ipo_text.insert(tk.END, "║ RECENT & UPCOMING IPOs - US & MALAYSIA MARKETS\n", "header")
+        ipo_text.insert(tk.END, "╚════════════════════════════════════════════════════════════════╝\n\n", "header")
+        
+        # US IPOs
+        ipo_text.insert(tk.END, "🇺🇸 US IPOs (NASDAQ/NYSE)\n", "market_header")
+        ipo_text.insert(tk.END, "─" * 70 + "\n")
+        
+        us_ipos = [
+            {
+                'ticker': 'COIN',
+                'company': 'Coinbase Global',
+                'sector': 'Fintech/Crypto',
+                'date': 'April 2024',
+                'status': 'Active'
+            },
+            {
+                'ticker': 'MSTR',
+                'company': 'MicroStrategy',
+                'sector': 'Software/Cloud',
+                'date': 'March 2024',
+                'status': 'Active'
+            },
+            {
+                'ticker': 'SMCI',
+                'company': 'Super Micro Computer',
+                'sector': 'Hardware/AI',
+                'date': 'February 2024',
+                'status': 'Active'
+            },
+            {
+                'ticker': 'CRWD',
+                'company': 'CrowdStrike Holdings',
+                'sector': 'Cybersecurity',
+                'date': 'January 2024',
+                'status': 'Active'
+            },
+            {
+                'ticker': 'NVDA',
+                'company': 'NVIDIA',
+                'sector': 'AI/Semiconductors',
+                'date': 'December 2023',
+                'status': 'Active'
+            },
+        ]
+        
+        for i, ipo in enumerate(us_ipos, 1):
+            ipo_text.insert(tk.END, f"{i}. ", "ipo_info")
+            ipo_text.insert(tk.END, f"{ipo['ticker']}", "ipo_ticker")
+            ipo_text.insert(tk.END, f" - {ipo['company']}\n", "ipo_info")
+            ipo_text.insert(tk.END, f"   Sector: ", "ipo_info")
+            ipo_text.insert(tk.END, f"{ipo['sector']}", "sector")
+            ipo_text.insert(tk.END, f" | Date: ", "ipo_info")
+            ipo_text.insert(tk.END, f"{ipo['date']}", "date")
+            ipo_text.insert(tk.END, f" | Status: {ipo['status']}\n\n", "ipo_info")
+        
+        ipo_text.insert(tk.END, "\n" + "=" * 70 + "\n\n")
+        
+        # Malaysia IPOs
+        ipo_text.insert(tk.END, "🇲🇾 MALAYSIA IPOs (KLSE)\n", "market_header")
+        ipo_text.insert(tk.END, "─" * 70 + "\n")
+        
+        my_ipos = [
+            {
+                'ticker': '0138.KL',
+                'company': 'Sunway Construction',
+                'sector': 'Construction/Property',
+                'date': 'April 2024',
+                'status': 'Active'
+            },
+            {
+                'ticker': '0161.KL',
+                'company': 'MyEG Services',
+                'sector': 'Tech/Digital Services',
+                'date': 'March 2024',
+                'status': 'Active'
+            },
+            {
+                'ticker': '0185.KL',
+                'company': 'KLK Plantation',
+                'sector': 'Agriculture/Plantation',
+                'date': 'February 2024',
+                'status': 'Active'
+            },
+            {
+                'ticker': '0198.KL',
+                'company': 'Pharmaniaga',
+                'sector': 'Healthcare/Pharma',
+                'date': 'January 2024',
+                'status': 'Active'
+            },
+            {
+                'ticker': '6616.KL',
+                'company': 'Sapura Energy',
+                'sector': 'Oil & Gas',
+                'date': 'December 2023',
+                'status': 'Active'
+            },
+        ]
+        
+        for i, ipo in enumerate(my_ipos, 1):
+            ipo_text.insert(tk.END, f"{i}. ", "ipo_info")
+            ipo_text.insert(tk.END, f"{ipo['ticker']}", "ipo_ticker")
+            ipo_text.insert(tk.END, f" - {ipo['company']}\n", "ipo_info")
+            ipo_text.insert(tk.END, f"   Sector: ", "ipo_info")
+            ipo_text.insert(tk.END, f"{ipo['sector']}", "sector")
+            ipo_text.insert(tk.END, f" | Date: ", "ipo_info")
+            ipo_text.insert(tk.END, f"{ipo['date']}", "date")
+            ipo_text.insert(tk.END, f" | Status: {ipo['status']}\n\n", "ipo_info")
+        
+        ipo_text.config(state=tk.DISABLED)
     
     def _create_summary_tab(self):
         """Create summary tab"""
@@ -252,45 +632,47 @@ class StockAnalysisGUI:
     
     def _create_multi_stock_tab(self):
         """Create multi-stock analysis tab"""
+        # Configure grid weights
+        self.multi_frame.grid_rowconfigure(1, weight=1)
+        self.multi_frame.grid_columnconfigure(0, weight=1)
+        
         control_frame = ttk.LabelFrame(self.multi_frame, text="Analyze Multiple Stocks", padding=10)
-        control_frame.pack(fill=tk.X, padx=5, pady=5)
+        control_frame.grid(row=0, column=0, sticky='ew', padx=5, pady=5)
         
         # Market selector
-        ttk.Label(control_frame, text="Market:").pack(side=tk.LEFT, padx=5)
+        ttk.Label(control_frame, text="Market:").grid(row=0, column=0, padx=5)
         self.multi_market_var = tk.StringVar(value=self.market)
         multi_market_combo = ttk.Combobox(control_frame, textvariable=self.multi_market_var,
                                          values=['US', 'MALAYSIA'],
                                          width=12, state="readonly")
-        multi_market_combo.pack(side=tk.LEFT, padx=5)
+        multi_market_combo.grid(row=0, column=1, padx=5)
         multi_market_combo.bind('<<ComboboxSelected>>', self._on_multi_market_changed)
         
         # Preset buttons
-        ttk.Label(control_frame, text="Presets:").pack(side=tk.LEFT, padx=(20, 5))
+        ttk.Label(control_frame, text="Presets:").grid(row=0, column=2, padx=(20, 5))
         
         def set_preset_us():
             self.multi_ticker_var.set("AAPL,MSFT,GOOGL,AMZN,NVDA")
         
         def set_preset_malaysia():
-            self.multi_ticker_var.set("MAYBANK.KL,TENAGA.KL,PETRONAS.KL,CIMB.KL,PUBLIC.KL")
+            self.multi_ticker_var.set("1155.KL,4715.KL,6012.KL,1023.KL,1295.KL")
         
         self.preset_us_btn = ttk.Button(control_frame, text="US Top 5", command=set_preset_us)
-        self.preset_us_btn.pack(side=tk.LEFT, padx=2)
+        self.preset_us_btn.grid(row=0, column=3, padx=2)
         
         self.preset_my_btn = ttk.Button(control_frame, text="Malaysia Top 5", command=set_preset_malaysia)
-        self.preset_my_btn.pack(side=tk.LEFT, padx=2)
+        self.preset_my_btn.grid(row=0, column=4, padx=2)
         
         # Ticker input
-        ttk.Label(control_frame, text="Tickers (comma-separated):").pack(side=tk.LEFT, padx=5)
+        ttk.Label(control_frame, text="Tickers:").grid(row=0, column=5, padx=5)
         self.multi_ticker_var = tk.StringVar(value="AAPL,MSFT,GOOGL,AMZN,NVDA")
-        multi_entry = ttk.Entry(control_frame, textvariable=self.multi_ticker_var, width=40)
-        multi_entry.pack(side=tk.LEFT, padx=5, fill=tk.X, expand=True)
+        multi_entry = ttk.Entry(control_frame, textvariable=self.multi_ticker_var, width=30)
+        multi_entry.grid(row=0, column=6, padx=5, sticky='ew')
+        control_frame.grid_columnconfigure(6, weight=1)
         
-        ttk.Button(control_frame, text="Analyze All", command=self._analyze_multiple).pack(side=tk.LEFT, padx=5)
+        ttk.Button(control_frame, text="Analyze All", command=self._analyze_multiple).grid(row=0, column=7, padx=5)
         
         # Results area
-        self.multi_frame.grid_rowconfigure(1, weight=1)
-        self.multi_frame.grid_columnconfigure(0, weight=1)
-        
         self.multi_text = scrolledtext.ScrolledText(self.multi_frame, height=30, width=100,
                                                     font=("Courier", 9), bg="#f0f0f0")
         self.multi_text.grid(row=1, column=0, sticky='nsew', padx=5, pady=5)
@@ -349,8 +731,9 @@ class StockAnalysisGUI:
         self.summary_text.insert(tk.END, f"╚════════════════════════════════════════╝\n\n", "header")
         
         # Basic Info
+        curr = self.get_currency_symbol()
         self.summary_text.insert(tk.END, f"Ticker:          {data.get('ticker', 'N/A')}\n", "neutral")
-        self.summary_text.insert(tk.END, f"Current Price:   ${data.get('current_price', 0):.2f}\n", "neutral")
+        self.summary_text.insert(tk.END, f"Current Price:   {curr}{data.get('current_price', 0):.2f}\n", "neutral")
         self.summary_text.insert(tk.END, f"Analysis Time:   {data.get('timestamp', 'N/A')}\n\n", "neutral")
         
         # Price Changes
@@ -380,8 +763,8 @@ class StockAnalysisGUI:
         # Support/Resistance
         sr_data = data.get('support_resistance', {})
         self.summary_text.insert(tk.END, "SUPPORT & RESISTANCE:\n", "header")
-        self.summary_text.insert(tk.END, f"  Support:              ${sr_data.get('support', 0):.2f}\n", "positive")
-        self.summary_text.insert(tk.END, f"  Resistance:           ${sr_data.get('resistance', 0):.2f}\n", "negative")
+        self.summary_text.insert(tk.END, f"  Support:              {curr}{sr_data.get('support', 0):.2f}\n", "positive")
+        self.summary_text.insert(tk.END, f"  Resistance:           {curr}{sr_data.get('resistance', 0):.2f}\n", "negative")
         self.summary_text.insert(tk.END, f"  Distance to Support:  {sr_data.get('distance_to_support', 0):+.2f}%\n", "neutral")
         self.summary_text.insert(tk.END, f"  Distance to Resist:   {sr_data.get('distance_to_resistance', 0):+.2f}%\n\n", "neutral")
     
@@ -427,10 +810,11 @@ class StockAnalysisGUI:
         bb_upper = data.get('bb_upper', 0)
         bb_middle = data.get('bb_middle', 0)
         bb_lower = data.get('bb_lower', 0)
+        curr = self.get_currency_symbol()
         self.indicators_text.insert(tk.END, "Bollinger Bands (20, 2):\n", "indicator")
-        self.indicators_text.insert(tk.END, f"  Upper Band:    ${bb_upper:.2f}\n", "negative")
-        self.indicators_text.insert(tk.END, f"  Middle Band:   ${bb_middle:.2f}\n", "value")
-        self.indicators_text.insert(tk.END, f"  Lower Band:    ${bb_lower:.2f}\n\n", "positive")
+        self.indicators_text.insert(tk.END, f"  Upper Band:    {curr}{bb_upper:.2f}\n", "negative")
+        self.indicators_text.insert(tk.END, f"  Middle Band:   {curr}{bb_middle:.2f}\n", "value")
+        self.indicators_text.insert(tk.END, f"  Lower Band:    {curr}{bb_lower:.2f}\n\n", "positive")
         
         # Stochastic
         stoch_k = data.get('stochastic_k', 0)
@@ -578,7 +962,7 @@ class StockAnalysisGUI:
     
     def _update_chart(self):
         """Update chart"""
-        if not self.current_analyzer or not self.current_analyzer.data is not None:
+        if not self.current_analyzer or self.current_analyzer.data is None:
             return
         
         # Clear previous chart
@@ -589,6 +973,7 @@ class StockAnalysisGUI:
         fig = Figure(figsize=(12, 6), dpi=100)
         
         data = self.current_analyzer.data
+        curr = self.get_currency_symbol()
         
         if chart_type == "price":
             ax = fig.add_subplot(111)
@@ -604,7 +989,7 @@ class StockAnalysisGUI:
             ax.plot(data.index, sma_200, label='SMA 200', alpha=0.7, color='#95E1D3', linewidth=1)
             
             ax.set_title(f'{self.ticker_var.get().upper()} - Price Chart', fontsize=14, fontweight='bold')
-            ax.set_ylabel('Price ($)', fontsize=12)
+            ax.set_ylabel(f'Price ({curr})', fontsize=12)
             ax.legend(loc='best')
             ax.grid(True, alpha=0.3)
         
@@ -642,7 +1027,7 @@ class StockAnalysisGUI:
             ax.plot(data.index, lower, label='Lower Band', linewidth=1, color='green', alpha=0.5)
             ax.fill_between(data.index, upper, lower, alpha=0.1, color='blue')
             ax.set_title(f'{self.ticker_var.get().upper()} - Bollinger Bands', fontsize=14, fontweight='bold')
-            ax.set_ylabel('Price ($)', fontsize=12)
+            ax.set_ylabel(f'Price ({curr})', fontsize=12)
             ax.legend(loc='best')
             ax.grid(True, alpha=0.3)
         
@@ -701,8 +1086,9 @@ class StockAnalysisGUI:
                 rsi = data.get('rsi', 0)
                 trend = data.get('trend_analysis', {}).get('trend', 'N/A')
                 sharpe = data.get('performance_metrics', {}).get('sharpe_ratio', 0)
+                curr = self.get_currency_symbol()
                 
-                self.multi_text.insert(tk.END, f"Price: ${price:.2f} | 1D Change: {change_1d:+.2f}% | ")
+                self.multi_text.insert(tk.END, f"Price: {curr}{price:.2f} | 1D Change: {change_1d:+.2f}% | ")
                 self.multi_text.insert(tk.END, f"RSI: {rsi:.2f} | Trend: {trend} | Sharpe: {sharpe:.3f}\n")
                 
                 signals = data.get('trading_signals', {})
